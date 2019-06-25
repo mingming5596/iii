@@ -1,0 +1,1 @@
+SELECT od.orderid, e.LastName, e.FirstName, od.unitprice, od.quantity, c.City, SUM(od.unitprice * od.quantity) as totalNums from `order details` od join orders o on (od.orderid = o.OrderID) join employees e on (o.EmployeeID = e.EmployeeID) join customers c on (o.CustomerID = c.CustomerID) GROUP BY od.orderid order by totalNums DESC limit 20;
