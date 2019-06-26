@@ -5,3 +5,12 @@ join employees e on (o.EmployeeID = e.EmployeeID)
 where year(o.orderdate) >= 1997
 GROUP BY o.employeeid 
 order by totalNums DESC;
+
+2. 哪個城市銷售額最高
+SELECT c.City, SUM(od.unitprice * od.quantity * (1-od.discount)) as totalNums 
+from `order details` od 
+join orders o on (od.orderid = o.OrderID) 
+join customers c on (o.CustomerID = c.CustomerID) 
+GROUP BY c.City 
+order by totalNums DESC 
+limit 20
