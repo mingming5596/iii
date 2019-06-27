@@ -1,0 +1,425 @@
+查出員工id=4的總業績:
+select sum(unitprice * quantity) from `order details`
+where orderid in (select orderid from orders where employeeid = 4);
+
+業績排行榜:
+用join:
+select e.employeeid, o.orderid, sum(od.unitprice * od.quantity) as total
+from orders o
+join `order details` od on (o.orderid = od.orderid)
+join employees e on (o.employeeid = e.employeeid)
+group by o.employeeid
+order by total desc;
+
+用using:
+select e.employeeid, o.orderid, sum(od.unitprice * od.quantity) as total
+from orders o
+join `order details` od on (o.orderid = od.orderid)
+join employees e using (employeeid)
+group by o.employeeid
+order by total desc;
+
+創db設主鍵:
+create database db1;
+use db1;
+create table tb1 (id int primary key, f1 varchar(10), f2 varchar(10));
+create table tb2 (id int, f1 varchar(10), f2 varchar(10), primary key(id));
+
+修改主鍵
+alter table tb3 primary key (id);
+alter table tb3 drop primary key;
+
+外鍵
+create table tb4 (id int, tb1id int, f1 varchar(10), primary key (id),
+foreign key (tb1id) references tb1 (id));
+
+select * from tb1;
++----+------+------+
+| id | f1   | f2   |
++----+------+------+
+|  1 | A    | AA   |
+|  2 | B    | BB   |
+|  3 | C    | CC   |
++----+------+------+
+
+insert into tb4 values (1, 1, 'AAA'); OK
+insert into tb4 values (5, 4, 'DDD'); ERROR
+ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`db1`.`tb4`, CONSTRAINT `tb4_ibfk_1` FOREIGN KEY (`tb1id`) REFERENCES `tb1` (`id`)
+
+
+create table tb5 (id int, f1 varchar(10), f2 varchar(10), f3 varchar(10),
+index(f1, f2),
+unique key (f3));
+
+
+select t4.id, t4.f1, t1.f1, t1.f2
+from tb4 t4 join tb1 t1 on (t4.tb1id = t1.id);
++----+------+------+------+
+| id | f1   | f1   | f2   |
++----+------+------+------+
+|  1 | AAA  | A    | AA   |
+|  2 | AAA1 | A    | AA   |
+|  3 | BBB  | B    | BB   |
+|  4 | CCC  | C    | CC   |
++----+------+------+------+
+
+
+select * from tb1;
++----+------+------+
+| id | f1   | f2   |
++----+------+------+
+|  1 | A    | AA   |
+|  2 | B    | BB   |
+|  3 | C    | CC   |
++----+------+------+
+
+select * from tb3;
++----+------+------+
+| id | f1   | f2   |
++----+------+------+
+|  1 | A    | 123  |
+|  2 | A    | 321  |
+|  3 | B    | 456  |
+|  3 | D    | 789  |
+|  4 | E    | 777  |
++----+------+------+
+
+select t3.f1, t3.f2, t1.f1, t1.f2 from tb3 t3
+    -> join tb1 t1 on (t3.f1 = t1.f1);
++------+------+------+------+
+| f1   | f2   | f1   | f2   |
++------+------+------+------+
+| A    | 123  | A    | AA   |
+| A    | 321  | A    | AA   |
+| B    | 456  | B    | BB   |
++------+------+------+------+
+
+select t3.f1, t3.f2, t1.f1, t1.f2 from tb3 t3
+    -> left join tb1 t1 on (t3.f1 = t1.f1);
++------+------+------+------+
+| f1   | f2   | f1   | f2   |
++------+------+------+------+
+| A    | 123  | A    | AA   |
+| A    | 321  | A    | AA   |
+| B    | 456  | B    | BB   |
+| D    | 789  | NULL | NULL |
+| E    | 777  | NULL | NULL |
++------+------+------+------+
+
+select t3.f1, t3.f2, t1.f1, t1.f2 from tb3 t3, tb1 t1
+    -> where t3.f1 = t1.f1;
++------+------+------+------+
+| f1   | f2   | f1   | f2   |
++------+------+------+------+
+| A    | 123  | A    | AA   |
+| A    | 321  | A    | AA   |
+| B    | 456  | B    | BB   |
++------+------+------+------+
+
+
+tb3合tb4 (欄位數相同才能合)
+select * from tb3 union select * from tb4;
+select f1, f2 from tb3 union select id, f1 from tb4;
+
+虛擬資料表 view:
+create view female as select * from students where csex = 'F';
+>>> view, table會互相影響
+
+建表連外鍵
+create table scores (cid tinyint(2) unsigned zerofill, term varchar(2), ch int, eng int, math int,
+    -> foreign key (cid) references students (cid));
+
+新增多筆資料
+select * from scores;
++------+------+------+------+------+
+| cid  | term | ch   | eng  | math |
++------+------+------+------+------+
+|   01 | 1    |   74 |  100 |   54 |
+|   01 | 2    |   53 |   65 |   63 |
+|   01 | 3    |   83 |   62 |   85 |
+|   01 | 4    |   76 |   88 |   47 |
+|   05 | 1    |   55 |   97 |   94 |
+|   05 | 2    |   79 |   74 |   93 |
+|   05 | 3    |   82 |   91 |   47 |
+|   05 | 4    |   45 |   44 |   44 |
+|   07 | 1    |   49 |   74 |   61 |
+|   07 | 2    |   46 |   65 |   88 |
+|   07 | 3    |   84 |   54 |   41 |
+|   07 | 4    |   62 |   89 |   98 |
++------+------+------+------+------+
+
+將scroe與students join
+select std.cid, std.cname, sc.term, sc.ch, sc.eng, sc.math from students std
+    -> join scores sc using (cid);
+
+各科學期平均數
+select std.cid, std.cname, sc.term, sc.ch, sc.eng, sc.math, (sc.ch+sc.eng+sc.math)/3 as avg
+    -> from students std join scores sc using (cid);
+
+
+建一產品與類別對應的view:
+create view pList as select p.productid, p.productname, c.categoryname from products p, categories c where p.categoryid = c.categoryid;
+
+變數
+set @var4 = 321
+select @var4 := 321;
+修改table的值不會影響變數
+
+set @myid = 1;
+select * from students where cid = @myid;
++-----+--------+------+------------+---------------------+------------+--------------------+-------+
+| cID | cName  | cSex | cBirthday  | cEmail              | cPhone     | cAddr              | score |
++-----+--------+------+------------+---------------------+------------+--------------------+-------+
+|  01 | 簡奉君 | F    | 1987-04-04 | elven@superstar.com | 0922988876 | 台北市濟洲北路12號 |    93 |
++-----+--------+------+------------+---------------------+------------+--------------------+-------+
+
+
+view or replace:
+create or replace view myscore
+    -> (id, name, email, term, ch, eng, math, avg) as
+    -> select std.cid, std.cname, std.cemail, sc.term, sc.ch, sc.eng, sc.math, (sc.ch+sc.eng+sc.math)/3 as avg
+    -> from students std join scores sc using (cid);
+
+
+ch小於平均值
+select @avg_ch := avg(ch) from myscore;
+select * from myscore where ch < @avg_ch
+
+預備敘述句
+insert into scores values (8, '2', 100, 90, 80);
+prepare inputScore from
+    -> 'insert into scores values (?,?,?,?,?)';
+set @id = 8, @term = '3', @ch = 70, @eng = 80, @math = 90;
+
+執行敘述句
+execute inputScore using @id, @term, @ch, @eng, @math;
+select * from myscore;
++----+--------+-----------------------+------+------+------+------+---------+
+| id | name   | email                 | term | ch   | eng  | math | avg     |
++----+--------+-----------------------+------+------+------+------+---------+
+| 01 | 簡奉君 | elven@superstar.com   | 1    |   74 |  100 |   54 | 76.0000 |
+| 01 | 簡奉君 | elven@superstar.com   | 2    |   53 |  100 |   63 | 72.0000 |
+| 01 | 簡奉君 | elven@superstar.com   | 3    |   83 |   62 |   85 | 76.6667 |
+| 01 | 簡奉君 | elven@superstar.com   | 4    |   76 |   88 |   47 | 70.3333 |
+| 05 | 黎楚寧 | ivy@superstar.com     | 1    |   55 |   97 |   94 | 82.0000 |
+| 05 | 黎楚寧 | ivy@superstar.com     | 2    |   79 |   74 |   93 | 82.0000 |
+| 05 | 黎楚寧 | ivy@superstar.com     | 3    |   82 |   91 |   47 | 73.3333 |
+| 05 | 黎楚寧 | ivy@superstar.com     | 4    |   45 |   44 |   44 | 44.3333 |
+| 07 | 徐佳螢 | lala@superstar.com    | 1    |   49 |   74 |   61 | 61.3333 |
+| 07 | 徐佳螢 | lala@superstar.com    | 2    |   46 |   65 |   88 | 66.3333 |
+| 07 | 徐佳螢 | lala@superstar.com    | 3    |   84 |   54 |   41 | 59.6667 |
+| 07 | 徐佳螢 | lala@superstar.com    | 4    |   62 |   89 |   98 | 83.0000 |
+| 08 | 林雨媗 | crystal@superstar.com | 1    |   13 |   87 |   94 | 64.6667 |
+| 08 | 林雨媗 | crystal@superstar.com | 2    |  100 |   90 |   80 | 90.0000 |
+| 08 | 林雨媗 | crystal@superstar.com | 3    |   70 |   80 |   90 | 80.0000 |
++----+--------+-----------------------+------+------+------+------+---------+
+
+
+修改結尾符號
+delimiter ##
+
+建立程序
+procedure 可帶參數, 沒有return
+create procedure showdown ()
+    -> begin
+    -> select * from myscore where avg < 70;
+    -> select * from myscore where avg > 70;
+    -> end ##
+
+執行程序
+call showdown
+    -> ;
++----+--------+-----------------------+------+------+------+------+---------+
+| id | name   | email                 | term | ch   | eng  | math | avg     |
++----+--------+-----------------------+------+------+------+------+---------+
+| 05 | 黎楚寧 | ivy@superstar.com     | 4    |   45 |   44 |   44 | 44.3333 |
+| 07 | 徐佳螢 | lala@superstar.com    | 1    |   49 |   74 |   61 | 61.3333 |
+| 07 | 徐佳螢 | lala@superstar.com    | 2    |   46 |   65 |   88 | 66.3333 |
+| 07 | 徐佳螢 | lala@superstar.com    | 3    |   84 |   54 |   41 | 59.6667 |
+| 08 | 林雨媗 | crystal@superstar.com | 1    |   13 |   87 |   94 | 64.6667 |
++----+--------+-----------------------+------+------+------+------+---------+
+5 rows in set (0.002 sec)
+
++----+--------+-----------------------+------+------+------+------+---------+
+| id | name   | email                 | term | ch   | eng  | math | avg     |
++----+--------+-----------------------+------+------+------+------+---------+
+| 01 | 簡奉君 | elven@superstar.com   | 1    |   74 |  100 |   54 | 76.0000 |
+| 01 | 簡奉君 | elven@superstar.com   | 2    |   53 |  100 |   63 | 72.0000 |
+| 01 | 簡奉君 | elven@superstar.com   | 3    |   83 |   62 |   85 | 76.6667 |
+| 01 | 簡奉君 | elven@superstar.com   | 4    |   76 |   88 |   47 | 70.3333 |
+| 05 | 黎楚寧 | ivy@superstar.com     | 1    |   55 |   97 |   94 | 82.0000 |
+| 05 | 黎楚寧 | ivy@superstar.com     | 2    |   79 |   74 |   93 | 82.0000 |
+| 05 | 黎楚寧 | ivy@superstar.com     | 3    |   82 |   91 |   47 | 73.3333 |
+| 07 | 徐佳螢 | lala@superstar.com    | 4    |   62 |   89 |   98 | 83.0000 |
+| 08 | 林雨媗 | crystal@superstar.com | 2    |  100 |   90 |   80 | 90.0000 |
+| 08 | 林雨媗 | crystal@superstar.com | 3    |   70 |   80 |   90 | 80.0000 |
++----+--------+-----------------------+------+------+------+------+---------+
+
+
+
+建立function
+create function f1 (x int, y int)
+    -> returns int
+    -> begin
+    -> return x + y;
+    -> end ##
+
+select f1(10, 3)##
++-----------+
+| f1(10, 3) |
++-----------+
+|        13 |
++-----------+
+
+結合變數
+create function f2 (x int, y int)
+    -> returns int
+    -> begin
+    -> set @ret = 2 * x + y;
+    -> return @ret;
+    -> end ##
+
+ select f2 (3, 4)##
++-----------+
+| f2 (3, 4) |
++-----------+
+|        10 |
++-----------+
+
+
+create function lotter() returns int
+    -> begin
+    -> return floor(rand()*49+1);
+    -> end ##
+
+select lotter()##
++----------+
+| lotter() |
++----------+
+|       19 |
++----------+
+
+
+procedure:
+create procedure p1 (IN x int, OUT y int, INOUT z int)
+    -> begin
+    -> select x, y, z;
+    -> set x = 100, y = 200, z = 300;
+    -> end ##
+
+set @v2 = 2, @v3 = 3##
+
+call p1(1, @v2, @v3)##
++------+------+------+
+| x    | y    | z    |
++------+------+------+
+|    1 | NULL |    3 |
++------+------+------+
+
+select @v2##
++------+
+| @v2  |
++------+
+|  200 |
++------+
+
+select @v3##
++------+
+| @v3  |
++------+
+|  300 |
++------+
+
+
+create procedure p2 (IN s int, OUT pass INT, OUT down int)
+    -> begin
+    -> select count(*) from students where score >= s;
+    -> select count(*) from students where score < s;
+    -> end ##
+
+
+create procedure p3 (IN id int, OUT counter int, OUT sum int)
+    -> begin
+    -> select count(*) into counter from orders where employeeid = id;
+    -> select sum(unitprice*quantity) into sum from `order details`
+    -> where orderid in (
+    -> select orderid from orders
+    -> where employeeid = id);
+    -> end ##
+
+call p3(1, @c. @s)
+
+
+區域變數 
+作用域在begin跟end之間
+create function f44() returns int
+    -> begin
+    -> declare v1 int;
+    -> declare v2, v3 int;
+    -> declare v4, v5 int default 1;
+    -> set v1 = 100, v2 = 200;
+    -> set v3 = v1 + v2 + v4 + v5;
+    -> return v3;
+    -> end##
+
+select f44()##
++-------+
+| f44() |
++-------+
+|   302 |
++-------+
+
+
+找出員工 客戶 廠商總共有多少人
+create function pcount() returns int
+    -> begin
+    -> declare ec, sc, cc int default 0;
+    -> declare total int default 0;
+    -> select count(*) into ec from employees;
+    -> select count(*) into sc from suppliers;
+    -> select count(*) into cc from customers;
+    -> set total = sc+ec+cc;
+    -> return total;
+    -> end##
+
+select pcount()##
++----------+
+| pcount() |
++----------+
+|      129 |
++----------+
+
+
+
+create procedure brad02(in score int)
+    -> begin
+    -> IF score >= 60 THEN
+    -> select 'PASS';
+    -> END IF;
+    -> end; ##
+
+call brad02(89)
++------+
+| PASS |
++------+
+| PASS |
++------+
+
+
+create procedure brad03(in score int)
+    -> begin
+    -> if score >= 60 then
+    -> select 'PASS';
+    -> else
+    -> select 'DOWN';
+    -> end if;
+    -> end; ##
+
+call brad03(57)##
++------+
+| DOWN |
++------+
+| DOWN |
++------+
+
+
