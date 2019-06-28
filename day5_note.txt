@@ -1,0 +1,379 @@
+DELIMITER $$
+BEGIN 
+	CASE
+    WHEN x > y THEN
+    SELECT 'bigger';
+    WHEN x < y THEN
+    SELECT 'small';
+    ELSE
+    SELECT 'equal';
+    END CASE;
+END$$
+DELIMITER ;
+
+
+
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` FUNCTION `brad02`(`x` INT(0)) RETURNS varchar(10) CHARSET utf8
+    NO SQL
+BEGIN
+	DECLARE result varchar(10) DEFAULT '';
+    CASE x
+    	WHEN 1 THEN set result = 'A';
+        WHEN 10 THEN set result = 'B';
+    	WHEN 100 THEN set result = 'C';
+	END CASE;
+    
+    RETURN result;
+END$$
+DELIMITER ;
+
+
+
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` FUNCTION `brad03`(`x` INT) RETURNS int(11)
+    NO SQL
+BEGIN
+	DECLARE result int;
+    CASE 
+    	WHEN x in (1, 3, 5 ,7, 8, 10, 12) THEN SET result = 31;
+        WHEN x in (4, 6 ,9, 11) THEN SET result = 30;
+    	WHEN x = 2 THEN SET result = 28;
+        ELSE set result = 'not much';
+    END CASE;
+ 	RETURN result;
+END$$
+DELIMITER ;
+
+
+function內不能select
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `brad03`()
+    NO SQL
+BEGIN
+	DECLARE i INT DEFAULT 0;
+    WHILE i < 10 DO
+    	SELECT i;
+        SET i = i+1;
+    END WHILE;
+
+END$$
+DELIMITER ;
+
+
+
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` FUNCTION `brad04`(`n` INT) RETURNS int(11)
+    NO SQL
+BEGIN
+	DECLARE i, sum int DEFAULT 0;
+	WHILE i <= n DO
+		set sum = sum + i;
+        set i = i+1;
+	END WHILE;
+    RETURN sum;
+END$$
+DELIMITER ;
+
+
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` FUNCTION `brad044`(`x` INT) RETURNS int(11)
+    NO SQL
+BEGIN
+	DECLARE i, sum INT DEFAULT 0;
+	REPEAT
+    	set i = i + 1;
+        set sum = sum + i;
+    	UNTIL i >= x
+    END REPEAT;
+    
+    RETURN sum;
+END$$
+DELIMITER ;
+
+
+
+
+無窮迴圈
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `brad05`()
+    NO SQL
+BEGIN
+	LOOP
+    	SELECT 'hello, world';
+    END LOOP;
+END$$
+DELIMITER ;
+
+
+
+
+loop, while, repeat 別名/標籤: (配合LEAVE)
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `brad05`()
+    NO SQL
+BEGIN
+	DECLARE i int DEFAULT 0;
+	brad: LOOP
+    	if i < 7 THEN
+    		SELECT 'hello, world';
+        ELSE
+        	LEAVE brad;
+        END if;
+        
+        set i = i + 1;
+    END LOOP brad;
+    
+    SELECT i;
+END$$
+DELIMITER ;
+
+
+
+
+
+迭代 ITERATE:
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `brad05`()
+    NO SQL
+BEGIN
+	DECLARE i int DEFAULT 0;
+	brad: LOOP
+    	if i < 7 THEN
+    		SELECT 'hello, world';
+        ELSEIF i > 10 THEN
+        	LEAVE brad;
+        ELSE
+        	SELECT 'restart';
+            set i = 100; 
+        	ITERATE brad;
+        END if;
+        
+        set i = i + 1;
+    END LOOP brad;
+    
+    SELECT i;
+END$$
+DELIMITER ;
+
+
+
+
+自訂錯誤訊息
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `newdata`(IN `id` INT, IN `name` VARCHAR(10) CHARSET utf8, IN `sex` VARCHAR(1), IN `birthday` VARCHAR(10))
+    NO SQL
+BEGIN
+	DECLARE EXIT HANDLER FOR SQLSTATE '23000'
+		BEGIN
+    		SELECT 'Oops!';
+    	END;
+    INSERT INTO students (cid, cname, csex,cbirthday) VALUES (id, name, sex, birthday);
+    SELECT 'OK';
+END$$
+DELIMITER ;
+
+
+
+
+
+
+BEGIN
+	DECLARE CONTINUE HANDLER FOR SQLSTATE '23000'
+		BEGIN
+    		SELECT 'Oops!';
+    	END;
+    INSERT INTO students (cid, cname, csex,cbirthday) VALUES (id, name, sex, birthday);
+    SELECT 'OK';
+END
+
+
+
+
+游標~?
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `brad06`()
+    NO SQL
+BEGIN
+	DECLARE i INT;
+    DECLARE vexit INT DEFAULT 0;
+    DECLARE id INT DEFAULT 0;
+    DECLARE name varchar(10) DEFAULT '';
+    
+    DECLARE curs CURSOR FOR 
+    	SELECT cid, cname FROM students;
+
+	OPEN curs;
+    
+    FETCH curs INTO id, name;
+	
+    CLOSE curs;
+    
+    SELECT concat(id, ':', name);
+END$$
+DELIMITER ;
+
+
+
+
+
+
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `brad06`()
+    NO SQL
+BEGIN
+	DECLARE i INT;
+    DECLARE vexit INT DEFAULT 0;
+    DECLARE id INT DEFAULT 0;
+    DECLARE name varchar(10) DEFAULT '';
+    
+    DECLARE curs CURSOR FOR 
+    	SELECT cid, cname FROM students;
+        
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET vexit = 1;
+
+	OPEN curs;
+    brad:LOOP
+    	FETCH curs INTO id, name;
+        if vexit = 1 THEN
+        	LEAVE brad;
+        END IF;
+        SELECT concat(id, ':', name);
+	END LOOP brad;
+    CLOSE curs;
+END$$
+DELIMITER ;
+
+
+
+
+尋訪: 列出及格/不及格
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `status`()
+    NO SQL
+BEGIN
+	DECLARE i INT;
+    DECLARE vexit INT DEFAULT 0;
+    DECLARE id, iscore INT DEFAULT 0;
+  	DECLARE newStatus varchar(10) DEFAULT '';
+    
+    DECLARE curs CURSOR FOR 
+    	SELECT cid, score FROM students;
+        
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET vexit = 1;
+
+	OPEN curs;
+    brad: LOOP
+    	FETCH curs INTO id, iscore;
+        if vexit = 1 THEN
+        	LEAVE brad;
+        END IF;
+        SELECT concat(iscore);
+        if iscore >= 60 THEN
+        	set newStatus = '及格';
+        ELSE
+        	set newStatus = '不及格';
+        end if;
+        
+       	UPDATE students SET status = newStatus WHERE cid = id;
+       
+	END LOOP brad;
+    CLOSE curs;
+END$$
+DELIMITER ;
+
+
+
+
+
+兩個游標~
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `brad07`()
+    NO SQL
+BEGIN
+	DECLARE i INT;
+    DECLARE vexit INT DEFAULT 0;
+    DECLARE id, iscore INT DEFAULT 0;
+    DECLARE bch, beng, bmath INT DEFAULT 0;
+  	DECLARE newStatus varchar(10) DEFAULT '';
+    
+    DECLARE curs1 CURSOR FOR 
+    	SELECT cid, score FROM students;
+        
+    DECLARE curs2 CURSOR FOR 
+    	SELECT ch, eng, math FROM scores;
+        
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET vexit = 1;
+
+	OPEN curs1;
+    OPEN curs2;
+    brad: LOOP
+    	FETCH curs1 INTO id, iscore;
+        FETCH curs2 INTO bch, beng, bmath;
+        if vexit = 1 THEN
+        	LEAVE brad;
+        END IF;
+        SELECT concat(id, ';', iscore,';',bch,';',beng,';', ';', bmath);
+        
+	END LOOP brad;
+    CLOSE curs1;
+    CLOSE curs2;
+END$$
+DELIMITER ;
+
+
+
+
+
+觸發器
+CREATE TRIGGER `t1` AFTER UPDATE ON `students`
+ FOR EACH ROW BEGIN
+	INSERT INTO log (etime, mesg) VALUES (now(), 'update');
+END
+
+
+
+用觸發器做before/after做log
+INSERT INTO log (etime, mesg) VALUES (now(), concat('update:', OLD.score, '=>', NEW.score));
+
+
+
+鎖住table
+lock tables students read;
+unlock tables;
+
+
+set autocommit = 0;
+
+
+開始交易
+start transaction;
+
+delete from scores;
+
+select * from scores; // 無資料
+Empty set (0.000 sec)
+
+rollback; //回復
+ commit; // 提交transaction之內的動作
+
+
+正則式
+找建國開頭
+select * from students where caddr regexp '^建國';
+
+找號結尾
+select * from students where caddr regexp '號$';
+
+找cname四個字元
+select * from students where cname regexp '^....$';
+
+
+
