@@ -1,0 +1,52 @@
+0. 每個辦公室的業績狀況表 
+select o.officeCode, sum(od.quantityOrdered * od.priceEach) as amount 
+from offices o join employees e on (o.officeCode = e.officeCode)
+join customers c on (e.employeeNumber = c.salesRepEmployeeNumber)
+join orders on (c.customerNumber = orders.customerNumber)
+join orderdetails od on (orders.orderNumber = od.orderNumber)
+GROUP by o.officeCode
+ORDER by amount DESC;
++------------+------------+
+| officeCode | amount     |
++------------+------------+
+| 4          | 3083761.58 |
+| 7          | 1436950.70 |
+| 1          | 1429063.57 |
+| 3          | 1157589.72 |
+| 6          | 1147176.35 |
+| 2          |  892538.62 |
+| 5          |  457110.07 |
++------------+------------+
+
+
+1. 業務業績排行榜, procedure 參數: 時間 狀態為Shipped
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getTopSales`(IN `beginDate` VARCHAR(10), IN `endDate` VARCHAR(10))
+    NO SQL
+BEGIN
+    select e.employeeNumber, sum(od.quantityOrdered * od.priceEach) as amount from employees e 
+    join customers c on (e.employeeNumber = c.salesRepEmployeeNumber)
+    join orders on (c.customerNumber = orders.customerNumber) 
+    join orderdetails od on (orders.orderNumber = od.orderNumber)
+    WHERE orders.status = 'Shipped' 
+    AND orders.orderDate >= beginDate 
+    AND orders.orderDate < endDate;
+END$$
+DELIMITER ;
+
+
+SET @p0='2003-01-01'; SET @p1='2003-12-31'; CALL `getTopSales`(@p0, @p1);
++----------------+------------+
+| employeeNumber | amount     |
++----------------+------------+
+|           1621 | 3223095.80 |
++----------------+------------+
+
+
+2. 熱銷商品排行榜, procedure 參數: 時間 狀態為Shipped
+
+
+
+3. 業務訂單取消的比例 orders.sttaus = canceled
+4. 低於商品建議售價MSRP x 95% 的訂單及其實際售價
+5. 當訂單資料被修改及刪除的時候記錄在 log 資料表中, 時間及所有資料欄位
