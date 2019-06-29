@@ -45,6 +45,53 @@ SET @p0='2003-01-01'; SET @p1='2003-12-31'; CALL `getTopSales`(@p0, @p1);
 
 2. 熱銷商品排行榜, procedure 參數: 時間 狀態為Shipped
 
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getProductSalesRanking`(IN `beginDate` VARCHAR(10), IN `endDate` VARCHAR(10))
+    NO SQL
+BEGIN
+    SELECT od.orderNumber, sum(od.priceEach * od.quantityOrdered) as sellingVolume FROM orderdetails od
+    JOIN orders ON (od.orderNumber = orders.orderNumber)
+    JOIN products p ON (od.productCode = p.productCode)
+    WHERE orders.status = 'Shipped'
+    AND orders.orderDate >= beginDate 
+    AND orders.orderDate < endDate
+    GROUP BY p.productCode
+    ORDER BY sellingVolume DESC;
+END$$
+DELIMITER ;
+
+
+SET @p0='2003-01-01'; SET @p1='2003-01-31'; CALL `getProductSalesRanking`(@p0, @p1);
++-------------+---------------+
+| orderNumber | sellingVolume |
++-------------+---------------+
+|       10103 |       5571.80 |
+|       10103 |       5026.14 |
+|       10101 |       4343.56 |
+|       10100 |       4080.00 |
+|       10103 |       3970.26 |
+|       10103 |       3950.94 |
+|       10103 |       3864.24 |
+|       10102 |       3726.45 |
+|       10103 |       3530.52 |
+|       10103 |       3307.50 |
+|       10103 |       3284.28 |
+|       10103 |       2866.26 |
+|       10103 |       2850.75 |
+|       10100 |       2754.50 |
+|       10101 |       2701.50 |
+|       10103 |       2489.13 |
+|       10103 |       2215.50 |
+|       10103 |       2173.00 |
+|       10103 |       2164.40 |
+|       10101 |       2040.10 |
+|       10102 |       1768.33 |
+|       10100 |       1729.21 |
+|       10103 |       1670.75 |
+|       10100 |       1660.12 |
+|       10101 |       1463.85 |
+|       10103 |       1283.48 |
++-------------+---------------+
 
 
 3. 業務訂單取消的比例 orders.sttaus = canceled
