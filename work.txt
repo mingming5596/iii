@@ -95,5 +95,36 @@ SET @p0='2003-01-01'; SET @p1='2003-01-31'; CALL `getProductSalesRanking`(@p0, @
 
 
 3. 業務訂單取消的比例 orders.sttaus = canceled
+SELECT e.employeeNumber,
+SUM((SELECT COUNT(*) FROM orders o WHERE c.customerNumber = o.customerNumber)) as totalOrdersNumber,
+SUM((SELECT COUNT(*) FROM orders o WHERE c.customerNumber = o.customerNumber and status = 'Cancelled')) as cancellNumber,
+((SUM((SELECT COUNT(*) FROM orders o WHERE c.customerNumber = o.customerNumber and status = 'Cancelled')) 
+/
+SUM((SELECT COUNT(*) FROM orders o WHERE c.customerNumber = o.customerNumber))) * 100) as 'percentage'
+FROM employees e
+JOIN customers c ON e.employeeNumber = c.salesRepEmployeeNumber
+GROUP BY e.employeeNumber;
+
++----------------+-------------------+---------------+------------+
+| employeeNumber | totalOrdersNumber | cancellNumber | percentage |
++----------------+-------------------+---------------+------------+
+|           1165 |                34 |             0 |     0.0000 |
+|           1166 |                14 |             0 |     0.0000 |
+|           1188 |                14 |             0 |     0.0000 |
+|           1216 |                18 |             0 |     0.0000 |
+|           1286 |                17 |             0 |     0.0000 |
+|           1323 |                22 |             1 |     4.5455 |
+|           1337 |                20 |             0 |     0.0000 |
+|           1370 |                43 |             1 |     2.3256 |
+|           1401 |                31 |             0 |     0.0000 |
+|           1501 |                22 |             1 |     4.5455 |
+|           1504 |                25 |             1 |     4.0000 |
+|           1611 |                19 |             0 |     0.0000 |
+|           1612 |                19 |             2 |    10.5263 |
+|           1621 |                16 |             0 |     0.0000 |
+|           1702 |                12 |             0 |     0.0000 |
++----------------+-------------------+---------------+------------+
+
+
 4. 低於商品建議售價MSRP x 95% 的訂單及其實際售價
 5. 當訂單資料被修改及刪除的時候記錄在 log 資料表中, 時間及所有資料欄位
