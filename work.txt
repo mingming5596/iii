@@ -147,3 +147,5 @@ WHERE (p.MSRP * 0.95) > od.priceEach;
 .
 
 5. 當訂單資料被修改及刪除的時候記錄在 log 資料表中, 時間及所有資料欄位
+create table log like orders;
+ALTER TABLE `log` ADD `logType` VARCHAR(10) NOT NULL AFTER `customerNumber`, ADD `modifyDate` DATETIME NOT NULL AFTER `logType`;
