@@ -127,4 +127,23 @@ GROUP BY e.employeeNumber;
 
 
 4. 低於商品建議售價MSRP x 95% 的訂單及其實際售價
+SELECT p.productcode, (p.MSRP * 0.95) as 'MSRP*95%', od.priceEach as 'Actual selling price' FROM orders 
+JOIN customers c on c.customerNumber = orders.customerNumber
+JOIN orderdetails od on od.orderNumber = orders.orderNumber
+JOIN products p on p.productCode = od.productCode
+WHERE (p.MSRP * 0.95) > od.priceEach;
+
++-------------+----------+----------------------+
+| productcode | MSRP*95% | Actual selling price |
++-------------+----------+----------------------+
+| S12_1666    | 129.8365 |               121.64 |
+| S18_1097    | 110.8365 |               101.50 |
+| S18_4668    |  47.7945 |                43.27 |
+| S32_3522    |  61.4080 |                58.82 |
+| S12_1099    | 184.8415 |               173.17 |
+| S12_3380    | 111.5680 |               110.39 |
+.
+.
+.
+
 5. 當訂單資料被修改及刪除的時候記錄在 log 資料表中, 時間及所有資料欄位
