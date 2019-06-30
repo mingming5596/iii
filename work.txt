@@ -148,7 +148,7 @@ WHERE (p.MSRP * 0.95) > od.priceEach;
 
 5. 當訂單資料被修改及刪除的時候記錄在 log 資料表中, 時間及所有資料欄位
 create table log like orders;
-ALTER TABLE `log` ADD `modifyDate` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `event`, ADD `event` ENUM('update','delete') NOT NULL AFTER `modifyDate2`;
+ALTER TABLE `log` ADD `modifyDate` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `event`, ADD `event` ENUM('update','delete') NOT NULL AFTER `modifyDate`;
 
 CREATE TRIGGER `updateOrder` AFTER UPDATE ON `orders`
  FOR EACH ROW BEGIN
